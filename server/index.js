@@ -36,20 +36,19 @@ app.post('/login', function (request, response) {
 		var answer = {};
 		if(err){
 			console.log(err);
-			response.status(400);
+			answer.status=400;
 		}
 		else{
-			
-			console.log(res.rows[0])
-			
 			if(res.rows[0]!='undefine'){
-				response.status(200);
-				answer = res.rows[0];
+				answer.status = 200;
+				answer.user = res.rows[0];
+				answer.cars = getCars(answer.user.phone);
 			}
 			else{
-				response.status(400);
+				answer.status = 400;
 			}
 		}
+		console.log(answer);
 		response.send(answer);
 	});
 });
@@ -87,26 +86,6 @@ app.post('/addcar', function (request, response) {
                 	return false;
 		}
         });
-	pool.query('SELECT * FROM userhascar WHERE phone='+request.body.phone+';', (err, res)=> {
-        	if(err){
-                        console.log(err);
-                        answer.status = 'Failed';
-                        response.send(JSON.stringify(answer));
-                        return false;
-                }
-		else{
-			//collect all
-		}
-	});
-	pool.query('SELECT * FROM cars WHERE  userhascar VALUES('+request.body.phone+', '+request.body.carNumber+');', (err, res)=> {
-                if(err){
-                        console.log(err);
-                        answer.status = 'Failed';
-                        response.send(JSON.stringify(answer));
-                        return false;
-                }
-        });
-
 });
 
 
@@ -124,6 +103,32 @@ app.post('/parking', function (request, response) {
         });
 });
 
+function getCars(phone){
+	var answer = {};
+	var list = '(';
+	 pool.query("SELECT * FROM userhascar WHERE phone='"+phone+"';", (err, res)=> {
+                if(err){
+                        console.log("FIRST ", err);
+                }
+                else{
+                        for(var i = 0; i<res.rows.length;i++){
+				list += "'"+res.rows[i].carnumber+"',";
+			}
+			list=list.slice(0, -1) + ')';
+                	console.log(list);
+			pool.query('SELECT * FROM cars WHERE carNumber IN '+list+';', (err2, res2)=> {
+                		if(err2){
+                        		console.log(err2);
+                        	}
+				else{
+					answer = res2;
+				}
+        		});
+		}
+		console.log("GET CAR ", answer);
+		return answer;
+        });
+}
 
 app.listen(3001, function () {
   console.log('Example app listening on port 3001!');
