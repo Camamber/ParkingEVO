@@ -42,7 +42,6 @@ app.post('/login', function (request, response) {
 		}
 		else{
 			if(res.rows[0]!='undefine'){
-				answer.status = 200;
 				answer.user = res.rows[0];
 				
 				var cars = [];
@@ -51,6 +50,8 @@ app.post('/login', function (request, response) {
         			pool.query("SELECT * FROM userhascar WHERE phone='" + answer.user.phone + "';", (err1, res1)=> {
                 			if(err1){
                         			console.log("FIRST ", err1);
+						response.status = 400;
+						response.send(answer);
                 			}
                 			else{
                         			for(var i = 0; i<res1.rows.length;i++){
@@ -61,14 +62,17 @@ app.post('/login', function (request, response) {
 
                         			pool.query('SELECT * FROM cars WHERE carnumber IN ' + list + ';', (err2, res2)=> {
                         				if(err2){
+								answer.status = 400;
                                 				console.log(err2);
-                        				}
+                        					response.send(answer);
+							}
                         				else {
                                 				for(var i = 0; i<res2.rows.length;i++){
                                         				cars.push(res2.rows[i]);
                                 				}
 								answer.cars = cars;
-                                				console.log(answer);
+                                				answer.status = 200;
+								console.log(answer);
                                 				response.send(answer);
                         				}				
                         			});
@@ -85,17 +89,7 @@ app.post('/login', function (request, response) {
 });
 
 app.post('/register', function (request, response) {
-        console.log(request.body.fef);
-        pool.query('SELECT * FROM users WHERE phone='+'+380638921129'+' AND password='+'9cdfb439c7876e703e307864c9167a15;', (err, res)=> {
-                if(err){
-                        console.log(err);
-                        response.send('WRONG');
-                }
-                else{
-                        console.log(res.rows[0])
-                        response.send('OK!');
-                }
-        });
+        console.log("reg new user");
 });
 
 app.post('/addcar', function (request, response) {
