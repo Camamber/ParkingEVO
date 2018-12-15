@@ -27,7 +27,7 @@ const pool = new Pool({
 });
 
 app.get('/', function (request, response) {
-	response.send('dolbaeb');
+	response.send('PARKING EVO');
 });
 
 app.post('/login', function (request, response) {
@@ -37,19 +37,50 @@ app.post('/login', function (request, response) {
 		if(err){
 			console.log(err);
 			answer.status=400;
+			console.log(answer);
+                	response.send(answer);		
 		}
 		else{
 			if(res.rows[0]!='undefine'){
 				answer.status = 200;
 				answer.user = res.rows[0];
-				answer.cars = getCars(answer.user.phone);
+				
+				var cars = [];
+			        var list = '(';
+
+        			pool.query("SELECT * FROM userhascar WHERE phone='" + answer.user.phone + "';", (err1, res1)=> {
+                			if(err1){
+                        			console.log("FIRST ", err1);
+                			}
+                			else{
+                        			for(var i = 0; i<res1.rows.length;i++){
+                                			list += "'"+res1.rows[i].carnumber+"',";
+                        			}
+                        			list=list.slice(0, -1) + ')';
+                        			console.log(list);
+
+                        			pool.query('SELECT * FROM cars WHERE carnumber IN ' + list + ';', (err2, res2)=> {
+                        				if(err2){
+                                				console.log(err2);
+                        				}
+                        				else {
+                                				for(var i = 0; i<res2.rows.length;i++){
+                                        				cars.push(res2.rows[i]);
+                                				}
+								answer.cars = cars;
+                                				console.log(answer);
+                                				response.send(answer);
+                        				}				
+                        			});
+                			}
+        			});
 			}
 			else{
 				answer.status = 400;
+				console.log(answer);
+                          	response.send(answer);
 			}
 		}
-		console.log(answer);
-		response.send(answer);
 	});
 });
 
@@ -91,7 +122,7 @@ app.post('/addcar', function (request, response) {
 
 app.post('/parking', function (request, response) {
         console.log(request.body);
-        pool.query('SELECT * FROM users WHERE phone='+'+380638921129'+' AND password='+'9cdfb439c7876e703e307864c9167a15', (err, res)=> {
+        pool.query('SELECT * FROM users WHERE phone=' + '+380638921129' + ' AND password=' + '9cdfb439c7876e703e307864c9167a15', (err, res)=> {
                 if(err){
                         console.log(err);
                         response.send('WRONG');
@@ -102,33 +133,6 @@ app.post('/parking', function (request, response) {
                 }
         });
 });
-
-function getCars(phone){
-	var answer = {};
-	var list = '(';
-	 pool.query("SELECT * FROM userhascar WHERE phone='"+phone+"';", (err, res)=> {
-                if(err){
-                        console.log("FIRST ", err);
-                }
-                else{
-                        for(var i = 0; i<res.rows.length;i++){
-				list += "'"+res.rows[i].carnumber+"',";
-			}
-			list=list.slice(0, -1) + ')';
-                	console.log(list);
-			pool.query('SELECT * FROM cars WHERE carNumber IN '+list+';', (err2, res2)=> {
-                		if(err2){
-                        		console.log(err2);
-                        	}
-				else{
-					answer = res2;
-				}
-        		});
-		}
-		console.log("GET CAR ", answer);
-		return answer;
-        });
-}
 
 app.listen(3001, function () {
   console.log('Example app listening on port 3001!');
